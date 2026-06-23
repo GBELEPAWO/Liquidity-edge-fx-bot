@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMC Bot — EUR/USD</title>
+<script src="https://unpkg.com/metaapi.cloud-sdk@latest/index.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0d12;
+    --surface: #111620;
+    --surface2: #181e2b;
+    --border: #1e2a3a;
+    --accent: #00e5ff;
+    --accent2: #7b61ff;
+    --green: #00e096;
+    --red: #ff4d6d;
+    --yellow: #ffd166;
+    --text: #e8edf5;
+    --muted: #5a6a80;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--mono);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.5s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* MAIN */
+  main { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+
+  /* CONNECT SECTION */
+  .section { margin-bottom: 24px; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-family: var(--mono);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .input-group { margin-bottom: 16px; }
+
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  .input-group input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-group input:focus { border-color: var(--accent); }
+  .input-group input::placeholder { color: var(--muted); }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+  }
+
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-danger {
+    background: rgba(255, 77, 109, 0.15);
+    color: var(--red);
+    border: 1px solid rgba(255, 77, 109, 0.3);
+  }
+
+  .btn-success {
+    background: rgba(0, 224, 150, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(0, 224, 150, 0.3);
+  }
+
+  /* ACCOUNT INFO */
+  .account-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .info-tile {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .info-tile .label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-bottom: 4px;
+  }
+
+  .info-tile .value {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+
+  .info-tile .value.green { color: var(--green); }
+  .info-tile .value.red { color: var(--red); }
+  .info-tile .value.accent { color: var(--accent); }
+
+  /* PARAMS */
+  .param-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .param-row:last-child { border-bottom: none; }
+
+  .param-label {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .param-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .param-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    width: 80px;
+    text-align: center;
+    outline: none;
+  }
+
+  .param-input:focus { border-color: var(--accent); }
+
+  /* BOT CONTROLS */
+  .bot-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+
+  /* SIGNAL */
+  .signal-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .signal-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .signal-card.buy::before { background: var(--green); }
+  .signal-card.sell::before { background: var(--red); }
+  .signal-card.waiting::before { background: var(--yellow); }
+
+  .signal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .signal-type {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--mono);
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+
+  .signal-type.buy { background: rgba(0,224,150,0.15); color: var(--green); }
+  .signal-type.sell { background: rgba(255,77,109,0.15); color: var(--red); }
+  .signal-type.waiting { background: rgba(255,209,102,0.15); color: var(--yellow); }
+
+  .signal-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .signal-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .signal-detail .dl { font-size: 10px; color: var(--muted); }
+  .signal-detail .dv { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .stat-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .stat-item .sv {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--mono);
+    display: block;
+  }
+
+  .stat-item .sl {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+
+  /* LOG */
+  .log-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .log-line { padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .lt { color: var(--muted); margin-right: 8px; }
+  .log-line .lm { color: var(--text); }
+  .log-line .lm.ok { color: var(--green); }
+  .log-line .lm.err { color: var(--red); }
+  .log-line .lm.info { color: var(--accent); }
+  .log-line .lm.warn { color: var(--yellow); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--muted);
+    border: none;
+    background: transparent;
+  }
+
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .hidden { display: none !important; }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-text">SMC Bot</div>
+      <div class="logo-sub">EUR/USD · M15</div>
+    </div>
+  </div>
+  <div class="status-pill" id="headerStatus">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Déconnecté</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- CONNECT SECTION -->
+  <div id="connectSection">
+    <div class="section-label">Connexion MetaApi</div>
+    <div class="card">
+      <div class="input-group">
+        <label>TOKEN METAAPI</label>
+        <input type="password" id="apiToken" placeholder="Colle ton token ici..." />
+      </div>
+      <div class="input-group">
+        <label>ACCOUNT ID</label>
+        <input type="text" id="accountId" placeholder="Ton Account ID..." />
+      </div>
+      <button class="btn btn-primary" id="connectBtn" onclick="connectAccount()">
+        Se connecter
+      </button>
+      <p style="margin-top:12px; font-size:11px; color:var(--muted); text-align:center; font-family:var(--mono);">
+        Trouve ces infos dans MetaApi → API Access
+      </p>
+    </div>
+    <div style="margin-top:16px;">
+      <div class="section-label">Journal de connexion</div>
+      <div class="log-box" id="connectLog" style="max-height:220px;">
+        <div class="log-line"><span class="lt">--:--:--</span><span class="lm info">En attente de connexion...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (hidden until connected) -->
+  <div id="dashboard" class="hidden">
+
+    <!-- ACCOUNT TILES -->
+    <div class="section-label">Compte</div>
+    <div class="account-info">
+      <div class="info-tile">
+        <div class="label">BALANCE</div>
+        <div class="value accent" id="balance">—</div>
+      </div>
+      <div class="info-tile">
+        <div class="label">EQUITY</div>
+        <div class="value" id="equity">—</div>
+      </div>
+      <div class="info-tile">
+        <div class="label">P&L DU JOUR</div>
+        <div class="value" id="pnl">—</div>
+      </div>
+      <div class="info-tile">
+        <div class="label">POSITIONS</div>
+        <div class="value" id="openPos">0</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="section-label">Statistiques</div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="sv" id="statWins" style="color:var(--green)">0</span>
+        <span class="sl">WINS</span>
+      </div>
+      <div class="stat-item">
+        <span class="sv" id="statLoss" style="color:var(--red)">0</span>
+        <span class="sl">LOSS</span>
+      </div>
+      <div class="stat-item">
+        <span class="sv" id="statWR" style="color:var(--accent)">0%</span>
+        <span class="sl">WIN RATE</span>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bot')">🤖 Bot</button>
+      <button class="tab" onclick="switchTab('signals')">📡 Signaux</button>
+      <button class="tab" onclick="switchTab('log')">📋 Log</button>
+    </div>
+
+    <!-- TAB: BOT -->
+    <div class="tab-content active" id="tab-bot">
+      <div class="section-label">Paramètres SMC/IDM</div>
+      <div class="card">
+        <div class="param-row">
+          <div>
+            <div class="param-label">Risque par trade</div>
+            <div class="param-sub">% du capital</div>
+          </div>
+          <input type="number" class="param-input" id="riskPct" value="1" min="0.1" max="5" step="0.1">
+        </div>
+        <div class="param-row">
+          <div>
+            <div class="param-label">Risk/Reward</div>
+            <div class="param-sub">Ratio TP/SL</div>
+          </div>
+          <input type="number" class="param-input" id="rrRatio" value="2" min="1" max="10" step="0.5">
+        </div>
+        <div class="param-row">
+          <div>
+            <div class="param-label">Spread max (pts)</div>
+            <div class="param-sub">Au-delà = pas de trade</div>
+          </div>
+          <input type="number" class="param-input" id="maxSpread" value="15" min="5" max="50">
+        </div>
+        <div class="param-row">
+          <div>
+            <div class="param-label">Trades max/jour</div>
+            <div class="param-sub">Limite journalière</div>
+          </div>
+          <input type="number" class="param-input" id="maxTrades" value="3" min="1" max="20">
+        </div>
+
+        <div class="bot-controls">
+          <button class="btn btn-success" id="startBtn" onclick="startBot()">▶ Démarrer</button>
+          <button class="btn btn-danger" id="stopBtn" onclick="stopBot()" disabled>⏹ Stopper</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-size:12px; color:var(--muted); margin-bottom:8px; font-family:var(--mono);">LOGIQUE ACTIVE</div>
+        <div style="font-size:12px; color:var(--text); line-height:1.8;">
+          🔍 <strong>IDM</strong> → détection piège de liquidité<br>
+          🔄 <strong>CHoCH</strong> → confirmation retournement<br>
+          📦 <strong>OB + FVG</strong> → zone d'entrée précise<br>
+          🎯 <strong>SL</strong> au-dessus/dessous IDM<br>
+          💰 <strong>TP</strong> automatique RR <span id="rrDisplay">1:2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: SIGNALS -->
+    <div class="tab-content" id="tab-signals">
+      <div class="section-label">Derniers signaux</div>
+      <div id="signalsList">
+        <div class="signal-card waiting">
+          <div class="signal-header">
+            <span class="signal-type waiting">EN ATTENTE</span>
+            <span class="signal-time" id="waitingTime">--:--</span>
+          </div>
+          <div style="font-size:12px; color:var(--muted);">
+            Le bot analyse le marché...<br>
+            Recherche IDM sur EUR/USD M15
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: LOG -->
+    <div class="tab-content" id="tab-log">
+      <div class="section-label">Journal du bot</div>
+      <div class="log-box" id="logBox">
+        <div class="log-line">
+          <span class="lt">--:--:--</span>
+          <span class="lm info">Système prêt. En attente de démarrage...</span>
+        </div>
+      </div>
+      <button class="btn" onclick="clearLog()" style="margin-top:10px; background:var(--surface2); border:1px solid var(--border); color:var(--muted); font-size:12px; padding:10px;">
+        Effacer le log
+      </button>
+    </div>
+
+    <div style="margin-top:24px; text-align:center;">
+      <button onclick="disconnect()" style="background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; font-family:var(--mono);">
+        Se déconnecter
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  connected: false,
+  botRunning: false,
+  token: '',
+  accountId: '',
+  balance: 0,
+  equity: 0,
+  wins: 0,
+  losses: 0,
+  openPositions: 0,
+  todayPnl: 0,
+  signals: [],
+  botInterval: null,
+  scanInterval: null,
+  prices: [],
+  candles: [],
+  tradesCount: 0,
+};
+
+// ============================================================
+// CONNECT
+// ============================================================
+const REGIONS = ['new-york', 'london', 'singapore'];
+const PROXIES = [
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => url  // tentative directe en dernier
+];
+
+function clog(msg, type = '') {
+  const box = document.getElementById('connectLog');
+  if (!box) { addLog(msg, type); return; }
+  const time = new Date().toLocaleTimeString('fr-FR');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="lt">${time}</span><span class="lm ${type}">${msg}</span>`;
+  box.insertBefore(line, box.firstChild);
+}
+
+async function tryFetch(url, options = {}) {
+  // Direct attempt first
+  try {
+    const res = await fetch(url, options);
+    clog(`Direct → HTTP ${res.status}`, res.ok ? 'ok' : 'warn');
+    if (res.ok) return res;
+  } catch (e) {
+    clog(`Direct → CORS bloqué`, 'warn');
+  }
+
+  // Try each proxy
+  for (const proxy of PROXIES) {
+    const proxied = proxy(url);
+    const label = proxied.includes('corsproxy') ? 'corsproxy.io' : proxied.includes('allorigins') ? 'allorigins' : 'cors-anywhere';
+    try {
+      const res = await fetch(proxied, options);
+      clog(`${label} → HTTP ${res.status}`, res.ok ? 'ok' : 'warn');
+      if (res.ok) return res;
+    } catch (e) {
+      clog(`${label} → ${e.message.substring(0,40)}`, 'warn');
+    }
+  }
+  return null;
+}
+
+async function connectAccount() {
+  const token = document.getElementById('apiToken').value.trim();
+  const accountId = document.getElementById('accountId').value.trim();
+
+  if (!token || !accountId) {
+    showToast('Remplis les deux champs !', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('connectBtn');
+  btn.innerHTML = '<span class="spinner"></span>Connexion...';
+  btn.disabled = true;
+
+  clog('=== DÉBUT CONNEXION ===', 'info');
+  clog(`Account ID: ${accountId.substring(0, 8)}...`, 'info');
+
+  for (const region of REGIONS) {
+    clog(`▶ Région: ${region}`, 'info');
+    const url = `https://mt-client-api-v1.${region}.agiliumtrade.ai/users/current/accounts/${accountId}/account-information`;
+
+    const res = await tryFetch(url, {
+      headers: { 'auth-token': token, 'Content-Type': 'application/json' }
+    });
+
+    if (res) {
+      try {
+        const data = await res.json();
+        if (data && data.balance !== undefined) {
+          state.connected = true;
+          state.token = token;
+          state.accountId = accountId;
+          state.region = region;
+          state.balance = data.balance || 0;
+          state.equity = data.equity || 0;
+
+          clog(`✅ Connecté ! Balance: $${state.balance.toFixed(2)}`, 'ok');
+          addLog(`Connecté via ${region} ! Balance: $${state.balance.toFixed(2)}`, 'ok');
+          updateUI();
+          showToast('Connecté avec succès !', 'success');
+          startPriceRefresh();
+          return;
+        } else {
+          clog(`Réponse: ${JSON.stringify(data).substring(0,60)}`, 'warn');
+        }
+      } catch(e) {
+        clog(`JSON error: ${e.message}`, 'err');
+      }
+    }
+  }
+
+  clog('❌ Échec total — toutes régions/proxies essayés', 'err');
+  clog('→ Token invalide ou compte inactif sur MetaApi', 'warn');
+  showToast('Connexion échouée — voir log', 'error');
+  btn.innerHTML = 'Se connecter';
+  btn.disabled = false;
+}
+
+function disconnect() {
+  stopBot();
+  clearInterval(state.scanInterval);
+  state = { ...state, connected: false, token: '', accountId: '', botRunning: false };
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('connectSection').classList.remove('hidden');
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = 'Déconnecté';
+  showToast('Déconnecté', 'error');
+}
+
+// ============================================================
+// PRICE REFRESH
+// ============================================================
+async function startPriceRefresh() {
+  await refreshAccountInfo();
+  state.scanInterval = setInterval(refreshAccountInfo, 30000);
+}
+
+async function refreshAccountInfo() {
+  const base = `https://mt-client-api-v1.${state.region || 'new-york'}.agiliumtrade.ai`;
+  try {
+    const res = await tryFetch(`${base}/users/current/accounts/${state.accountId}/account-information`, {
+      headers: { 'auth-token': state.token }
+    });
+    if (!res) return;
+    const data = await res.json();
+    state.balance = data.balance || state.balance;
+    state.equity = data.equity || state.equity;
+    updateAccountTiles();
+  } catch (_) {}
+
+  // Also fetch open positions
+  try {
+    const res2 = await tryFetch(`${base}/users/current/accounts/${state.accountId}/positions`, {
+      headers: { 'auth-token': state.token }
+    });
+    if (res2) {
+      const positions = await res2.json();
+      state.openPositions = positions.length;
+      state.todayPnl = positions.reduce((s, p) => s + (p.unrealizedProfit || 0), 0);
+      updateAccountTiles();
+    }
+  } catch (_) {}
+}
+
+// ============================================================
+// BOT LOGIC — SMC/IDM SIMULATION ENGINE
+// ============================================================
+function startBot() {
+  if (state.botRunning) return;
+  state.botRunning = true;
+  state.tradesCount = 0;
+
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  document.getElementById('statusDot').className = 'status-dot running';
+  document.getElementById('statusText').textContent = 'Bot actif';
+
+  addLog('Bot démarré — SMC/IDM actif sur EUR/USD M15', 'ok');
+  addLog(`Risque: ${document.getElementById('riskPct').value}% | RR: 1:${document.getElementById('rrRatio').value}`, 'info');
+
+  // Update RR display
+  document.getElementById('rrDisplay').textContent = `1:${document.getElementById('rrRatio').value}`;
+
+  // Run analysis every 60 seconds
+  runAnalysis();
+  state.botInterval = setInterval(runAnalysis, 60000);
+}
+
+function stopBot() {
+  if (!state.botRunning) return;
+  state.botRunning = false;
+  clearInterval(state.botInterval);
+
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('statusDot').className = 'status-dot active';
+  document.getElementById('statusText').textContent = 'Connecté';
+
+  addLog('Bot stoppé.', 'warn');
+}
+
+async function runAnalysis() {
+  if (!state.botRunning) return;
+
+  const maxTrades = parseInt(document.getElementById('maxTrades').value);
+  if (state.tradesCount >= maxTrades) {
+    addLog(`Limite journalière atteinte (${maxTrades} trades)`, 'warn');
+    return;
+  }
+
+  addLog('Analyse M15 en cours...', 'info');
+
+  try {
+    // Fetch M15 candles for EUR/USD
+    const res = await tryFetch(
+      `https://mt-client-api-v1.${state.region || 'new-york'}.agiliumtrade.ai/users/current/accounts/${state.accountId}/historical-market-data/symbols/EURUSD/timeframes/15m/candles?limit=50`,
+      { headers: { 'auth-token': state.token } }
+    );
+
+    if (!res) {
+      addLog('Impossible de récupérer les bougies', 'warn');
+      return;
+    }
+
+    const candles = await res.json();
+    if (!candles || candles.length < 20) {
+      addLog('Données insuffisantes', 'warn');
+      return;
+    }
+
+    state.candles = candles;
+    const signal = detectSMCSignal(candles);
+
+    if (signal) {
+      addLog(`Signal ${signal.type} détecté ! IDM: ${signal.idmLevel} | OB: ${signal.obLevel}`, 'ok');
+      addSignalCard(signal);
+      await executeTrade(signal);
+    } else {
+      addLog('Aucun setup SMC/IDM valide pour l\'instant', 'info');
+      updateWaitingSignal();
+    }
+
+  } catch (err) {
+    addLog(`Erreur analyse: ${err.message}`, 'err');
+  }
+}
+
+// ============================================================
+// SMC/IDM DETECTION ENGINE
+// ============================================================
+function detectSMCSignal(candles) {
+  const len = candles.length;
+  if (len < 15) return null;
+
+  const maxSpread = parseInt(document.getElementById('maxSpread').value);
+
+  // Get recent candles
+  const recent = candles.slice(-15);
+  const highs = recent.map(c => c.high);
+  const lows = recent.map(c => c.low);
+  const closes = recent.map(c => c.close);
+  const opens = recent.map(c => c.open);
+
+  const lastClose = closes[closes.length - 1];
+  const lastHigh = highs[highs.length - 1];
+  const lastLow = lows[lows.length - 1];
+
+  // Find swing high/low for IDM detection
+  const swingHigh = Math.max(...highs.slice(-8, -2));
+  const swingLow = Math.min(...lows.slice(-8, -2));
+
+  // Detect IDM SELL setup
+  // Price sweeps above swing high (IDM = liquidity grab) then reverses
+  const idmSell = lastHigh > swingHigh && lastClose < swingHigh;
+
+  // Detect IDM BUY setup
+  // Price sweeps below swing low (IDM) then recovers
+  const idmBuy = lastLow < swingLow && lastClose > swingLow;
+
+  // Detect CHoCH (Change of Character)
+  const prevClose = closes[closes.length - 3];
+  const chochBear = idmSell && lastClose < prevClose * 0.9995;
+  const chochBull = idmBuy && lastClose > prevClose * 1.0005;
+
+  // Find Order Block
+  let signal = null;
+
+  if (chochBear) {
+    // Last bullish candle before reversal = bearish OB
+    let obIdx = recent.length - 4;
+    while (obIdx > 0 && closes[obIdx] < opens[obIdx]) obIdx--;
+    const obLevel = opens[obIdx] || swingHigh;
+
+    // Find FVG (gap between candle bodies)
+    const fvgHigh = Math.min(lows[recent.length - 2], lows[recent.length - 3]);
+    const fvgLow = Math.max(highs[recent.length - 4], highs[recent.length - 5]);
+    const hasFVG = fvgHigh > fvgLow;
+
+    const sl = swingHigh + 0.0010;
+    const rrRatio = parseFloat(document.getElementById('rrRatio').value);
+    const tp = lastClose - (sl - lastClose) * rrRatio;
+
+    signal = {
+      type: 'SELL',
+      entry: lastClose,
+      sl: parseFloat(sl.toFixed(5)),
+      tp: parseFloat(tp.toFixed(5)),
+      idmLevel: parseFloat(swingHigh.toFixed(5)),
+      obLevel: parseFloat(obLevel.toFixed(5)),
+      hasFVG,
+      time: new Date().toLocaleTimeString('fr-FR')
+    };
+  }
+
+  if (chochBull) {
+    let obIdx = recent.length - 4;
+    while (obIdx > 0 && closes[obIdx] > opens[obIdx]) obIdx--;
+    const obLevel = opens[obIdx] || swingLow;
+
+    const fvgLow = Math.max(highs[recent.length - 2], highs[recent.length - 3]);
+    const fvgHigh = Math.min(lows[recent.length - 4], lows[recent.length - 5]);
+    const hasFVG = fvgLow > fvgHigh;
+
+    const sl = swingLow - 0.0010;
+    const rrRatio = parseFloat(document.getElementById('rrRatio').value);
+    const tp = lastClose + (lastClose - sl) * rrRatio;
+
+    signal = {
+      type: 'BUY',
+      entry: lastClose,
+      sl: parseFloat(sl.toFixed(5)),
+      tp: parseFloat(tp.toFixed(5)),
+      idmLevel: parseFloat(swingLow.toFixed(5)),
+      obLevel: parseFloat(obLevel.toFixed(5)),
+      hasFVG,
+      time: new Date().toLocaleTimeString('fr-FR')
+    };
+  }
+
+  return signal;
+}
+
+// ============================================================
+// EXECUTE TRADE
+// ============================================================
+async function executeTrade(signal) {
+  addLog(`Envoi ordre ${signal.type} @ ${signal.entry}...`, 'info');
+
+  const riskPct = parseFloat(document.getElementById('riskPct').value) / 100;
+  const slPips = Math.abs(signal.entry - signal.sl) * 10000;
+  const lotSize = Math.max(0.01, parseFloat(((state.balance * riskPct) / (slPips * 10)).toFixed(2)));
+
+  try {
+    const body = {
+      symbol: 'EURUSD',
+      volume: lotSize,
+      actionType: signal.type === 'BUY' ? 'ORDER_TYPE_BUY' : 'ORDER_TYPE_SELL',
+      stopLoss: signal.sl,
+      takeProfit: signal.tp,
+      comment: 'SMC-IDM-Bot'
+    };
+
+    const res = await tryFetch(
+      `https://mt-client-api-v1.${state.region || 'new-york'}.agiliumtrade.ai/users/current/accounts/${state.accountId}/trade`,
+      {
+        method: 'POST',
+        headers: {
+          'auth-token': state.token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      }
+    );
+
+    if (!res) {
+      throw new Error('Requête bloquée (CORS ou réseau)');
+    }
+
+    const result = await res.json();
+    state.tradesCount++;
+    state.openPositions++;
+
+    addLog(`✅ Ordre exécuté ! Lot: ${lotSize} | SL: ${signal.sl} | TP: ${signal.tp}`, 'ok');
+    showToast(`${signal.type} exécuté !`, 'success');
+    updateAccountTiles();
+
+  } catch (err) {
+    addLog(`❌ Ordre échoué: ${err.message}`, 'err');
+    showToast('Ordre échoué', 'error');
+  }
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function updateUI() {
+  document.getElementById('connectSection').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('statusDot').className = 'status-dot active';
+  document.getElementById('statusText').textContent = 'Connecté';
+
+  const connectBtn = document.getElementById('connectBtn');
+  connectBtn.innerHTML = 'Se connecter';
+  connectBtn.disabled = false;
+
+  updateAccountTiles();
+}
+
+function updateAccountTiles() {
+  document.getElementById('balance').textContent = `$${state.balance.toFixed(2)}`;
+  document.getElementById('equity').textContent = `$${state.equity.toFixed(2)}`;
+  document.getElementById('openPos').textContent = state.openPositions;
+
+  const pnlEl = document.getElementById('pnl');
+  pnlEl.textContent = `$${state.todayPnl.toFixed(2)}`;
+  pnlEl.className = `value ${state.todayPnl >= 0 ? 'green' : 'red'}`;
+
+  // Stats
+  const total = state.wins + state.losses;
+  document.getElementById('statWins').textContent = state.wins;
+  document.getElementById('statLoss').textContent = state.losses;
+  document.getElementById('statWR').textContent = total > 0 ? `${Math.round(state.wins / total * 100)}%` : '0%';
+}
+
+function addSignalCard(signal) {
+  const list = document.getElementById('signalsList');
+  const cls = signal.type === 'BUY' ? 'buy' : 'sell';
+  const html = `
+    <div class="signal-card ${cls}">
+      <div class="signal-header">
+        <span class="signal-type ${cls}">${signal.type}</span>
+        <span class="signal-time">${signal.time}</span>
+      </div>
+      <div class="signal-details">
+        <div class="signal-detail">
+          <div class="dl">ENTRÉE</div>
+          <div class="dv">${signal.entry}</div>
+        </div>
+        <div class="signal-detail">
+          <div class="dl">SL</div>
+          <div class="dv" style="color:var(--red)">${signal.sl}</div>
+        </div>
+        <div class="signal-detail">
+          <div class="dl">TP</div>
+          <div class="dv" style="color:var(--green)">${signal.tp}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:11px; color:var(--muted); font-family:var(--mono);">
+        IDM: ${signal.idmLevel} | OB: ${signal.obLevel} ${signal.hasFVG ? '| FVG ✓' : ''}
+      </div>
+    </div>
+  `;
+  list.insertAdjacentHTML('afterbegin', html);
+
+  // Keep max 5 signals
+  while (list.children.length > 5) list.removeChild(list.lastChild);
+}
+
+function updateWaitingSignal() {
+  document.getElementById('waitingTime').textContent = new Date().toLocaleTimeString('fr-FR');
+}
+
+function addLog(msg, type = '') {
+  const box = document.getElementById('logBox');
+  const time = new Date().toLocaleTimeString('fr-FR');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="lt">${time}</span><span class="lm ${type}">${msg}</span>`;
+  box.insertBefore(line, box.firstChild);
+  while (box.children.length > 50) box.removeChild(box.lastChild);
+}
+
+function clearLog() {
+  document.getElementById('logBox').innerHTML = '<div class="log-line"><span class="lt">--:--:--</span><span class="lm info">Log effacé.</span></div>';
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['bot','signals','log'][i] === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Update RR display on change
+document.getElementById('rrRatio')?.addEventListener('input', function() {
+  document.getElementById('rrDisplay').textContent = `1:${this.value}`;
+});
+</script>
+</body>
+</html>
