@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMC Bot — Deriv</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0d12;
+    --surface: #111620;
+    --surface2: #181e2b;
+    --border: #1e2a3a;
+    --accent: #00e5ff;
+    --accent2: #7b61ff;
+    --green: #00e096;
+    --red: #ff4d6d;
+    --yellow: #ffd166;
+    --text: #e8edf5;
+    --muted: #5a6a80;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo-text { font-size: 16px; font-weight: 700; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 500; font-family: var(--mono);
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  .status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.5s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  main { padding: 20px 16px; max-width: 480px; margin: 0 auto; }
+
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 12px; font-family: var(--mono);
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px; margin-bottom: 20px;
+  }
+
+  .input-group { margin-bottom: 16px; }
+  .input-group label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: var(--mono); }
+  .input-group input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; outline: none; transition: border-color 0.2s;
+  }
+  .input-group input:focus { border-color: var(--accent); }
+  .input-group input::placeholder { color: var(--muted); }
+
+  .btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-danger { background: rgba(255,77,109,0.15); color: var(--red); border: 1px solid rgba(255,77,109,0.3); }
+  .btn-success { background: rgba(0,224,150,0.15); color: var(--green); border: 1px solid rgba(0,224,150,0.3); }
+
+  .account-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .info-tile { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .info-tile .label { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-bottom: 4px; }
+  .info-tile .value { font-size: 18px; font-weight: 700; font-family: var(--mono); }
+  .info-tile .value.green { color: var(--green); }
+  .info-tile .value.red { color: var(--red); }
+  .info-tile .value.accent { color: var(--accent); }
+
+  .param-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .param-row:last-child { border-bottom: none; }
+  .param-label { font-size: 13px; color: var(--text); }
+  .param-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .param-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; color: var(--text);
+    font-family: var(--mono); font-size: 13px; width: 80px; text-align: center; outline: none;
+  }
+  .param-input:focus { border-color: var(--accent); }
+
+  .bot-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+
+  .signal-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+    position: relative; overflow: hidden;
+  }
+  .signal-card::before {
+    content:''; position:absolute; left:0;top:0;bottom:0;width:3px; border-radius:3px 0 0 3px;
+  }
+  .signal-card.buy::before { background: var(--green); }
+  .signal-card.sell::before { background: var(--red); }
+  .signal-card.waiting::before { background: var(--yellow); }
+
+  .signal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .signal-type { font-size:13px; font-weight:700; font-family:var(--mono); padding:3px 10px; border-radius:6px; }
+  .signal-type.buy { background:rgba(0,224,150,0.15); color:var(--green); }
+  .signal-type.sell { background:rgba(255,77,109,0.15); color:var(--red); }
+  .signal-type.waiting { background:rgba(255,209,102,0.15); color:var(--yellow); }
+  .signal-time { font-size:11px; color:var(--muted); font-family:var(--mono); }
+  .signal-details { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .signal-detail .dl { font-size:10px; color:var(--muted); }
+  .signal-detail .dv { font-size:13px; font-weight:600; font-family:var(--mono); }
+
+  .stats-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+  .stat-item { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
+  .stat-item .sv { font-size:20px; font-weight:700; font-family:var(--mono); display:block; }
+  .stat-item .sl { font-size:10px; color:var(--muted); font-family:var(--mono); margin-top:2px; }
+
+  .log-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; max-height: 200px;
+    overflow-y: auto; font-family: var(--mono); font-size: 11px;
+  }
+  .log-line { padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .lt { color: var(--muted); margin-right: 8px; }
+  .log-line .lm { color: var(--text); }
+  .log-line .lm.ok { color: var(--green); }
+  .log-line .lm.err { color: var(--red); }
+  .log-line .lm.info { color: var(--accent); }
+  .log-line .lm.warn { color: var(--yellow); }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 20px;
+    font-size: 13px; font-weight: 500; z-index: 999;
+    transition: transform 0.3s ease; white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 4px; margin-bottom: 20px;
+  }
+  .tab {
+    flex: 1; padding: 10px; text-align: center; border-radius: 9px;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+    color: var(--muted); border: none; background: transparent;
+  }
+  .tab.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .hidden { display: none !important; }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+
+  .hint-box {
+    background: rgba(0,229,255,0.05); border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 12px;
+    color: var(--muted); line-height: 1.6;
+  }
+  .hint-box a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-text">SMC Bot</div>
+      <div class="logo-sub">Deriv · EUR/USD · M15</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Déconnecté</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- CONNECT SECTION -->
+  <div id="connectSection">
+    <div class="section-label">Connexion Deriv</div>
+
+    <div class="hint-box">
+      🔑 Pour obtenir ton token Deriv :<br>
+      1. Va sur <a href="https://app.deriv.com/account/api-token" target="_blank">app.deriv.com/account/api-token</a><br>
+      2. Crée un token avec les scopes : <strong>Read + Trade</strong><br>
+      3. Colle-le ci-dessous
+    </div>
+
+    <div class="card">
+      <div class="input-group">
+        <label>TOKEN DERIV</label>
+        <input type="password" id="apiToken" placeholder="Colle ton token Deriv ici..." />
+      </div>
+      <button class="btn btn-primary" id="connectBtn" onclick="connectDeriv()">
+        Se connecter
+      </button>
+    </div>
+
+    <div class="section-label">Journal de connexion</div>
+    <div class="log-box" id="connectLog">
+      <div class="log-line"><span class="lt">--:--:--</span><span class="lm info">En attente de connexion...</span></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="hidden">
+
+    <div class="section-label">Compte Deriv</div>
+    <div class="account-info">
+      <div class="info-tile">
+        <div class="label">BALANCE</div>
+        <div class="value accent" id="balance">—</div>
+      </div>
+      <div class="info-tile">
+        <div class="label">DEVISE</div>
+        <div class="value" id="currency">—</div>
+      </div>
+      <div class="info-tile">
+        <div class="label">P&L SESSION</div>
+        <div class="value" id="pnl">$0.00</div>
+      </div>
+      <div class="info-tile">
+        <div class="label">TRADES</div>
+        <div class="value" id="openPos">0</div>
+      </div>
+    </div>
+
+    <div class="section-label">Statistiques</div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="sv" id="statWins" style="color:var(--green)">0</span>
+        <span class="sl">WINS</span>
+      </div>
+      <div class="stat-item">
+        <span class="sv" id="statLoss" style="color:var(--red)">0</span>
+        <span class="sl">LOSS</span>
+      </div>
+      <div class="stat-item">
+        <span class="sv" id="statWR" style="color:var(--accent)">0%</span>
+        <span class="sl">WIN RATE</span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bot')">🤖 Bot</button>
+      <button class="tab" onclick="switchTab('signals')">📡 Signaux</button>
+      <button class="tab" onclick="switchTab('log')">📋 Log</button>
+    </div>
+
+    <!-- TAB BOT -->
+    <div class="tab-content active" id="tab-bot">
+      <div class="section-label">Paramètres SMC/IDM</div>
+      <div class="card">
+        <div class="param-row">
+          <div>
+            <div class="param-label">Mise par trade ($)</div>
+            <div class="param-sub">Montant fixe</div>
+          </div>
+          <input type="number" class="param-input" id="stakeAmount" value="1" min="0.35" max="100" step="0.5">
+        </div>
+        <div class="param-row">
+          <div>
+            <div class="param-label">Risk/Reward</div>
+            <div class="param-sub">Ratio TP/SL</div>
+          </div>
+          <input type="number" class="param-input" id="rrRatio" value="2" min="1" max="10" step="0.5">
+        </div>
+        <div class="param-row">
+          <div>
+            <div class="param-label">Trades max/session</div>
+            <div class="param-sub">Limite de sécurité</div>
+          </div>
+          <input type="number" class="param-input" id="maxTrades" value="3" min="1" max="20">
+        </div>
+        <div class="bot-controls">
+          <button class="btn btn-success" id="startBtn" onclick="startBot()">▶ Démarrer</button>
+          <button class="btn btn-danger" id="stopBtn" onclick="stopBot()" disabled>⏹ Stopper</button>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-family:var(--mono);">LOGIQUE ACTIVE</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.8;">
+          🔍 <strong>IDM</strong> → détection piège de liquidité<br>
+          🔄 <strong>CHoCH</strong> → confirmation retournement<br>
+          📦 <strong>OB + FVG</strong> → zone d'entrée précise<br>
+          🎯 <strong>SL</strong> au-dessus/dessous IDM<br>
+          💰 <strong>TP</strong> automatique RR <span id="rrDisplay">1:2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB SIGNALS -->
+    <div class="tab-content" id="tab-signals">
+      <div class="section-label">Derniers signaux</div>
+      <div id="signalsList">
+        <div class="signal-card waiting">
+          <div class="signal-header">
+            <span class="signal-type waiting">EN ATTENTE</span>
+            <span class="signal-time" id="waitingTime">--:--</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);">Le bot analyse le marché...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB LOG -->
+    <div class="tab-content" id="tab-log">
+      <div class="section-label">Journal du bot</div>
+      <div class="log-box" id="logBox">
+        <div class="log-line"><span class="lt">--:--:--</span><span class="lm info">Système prêt.</span></div>
+      </div>
+      <button class="btn" onclick="clearLog()" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:10px;">
+        Effacer le log
+      </button>
+    </div>
+
+    <div style="margin-top:24px;text-align:center;">
+      <button onclick="disconnect()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--mono);">
+        Se déconnecter
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  connected: false,
+  botRunning: false,
+  token: '',
+  accountId: '',
+  balance: 0,
+  currency: 'USD',
+  wins: 0,
+  losses: 0,
+  tradesCount: 0,
+  todayPnl: 0,
+  botInterval: null,
+  candles: [],
+  ws: null,
+  reqId: 1,
+  pendingRequests: {},
+  contractId: null,
+};
+
+// ============================================================
+// DERIV WEBSOCKET API
+// ============================================================
+function wsRequest(payload) {
+  return new Promise((resolve, reject) => {
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      reject(new Error('WebSocket non connecté'));
+      return;
+    }
+    const id = state.reqId++;
+    payload.req_id = id;
+    state.pendingRequests[id] = { resolve, reject };
+    state.ws.send(JSON.stringify(payload));
+    setTimeout(() => {
+      if (state.pendingRequests[id]) {
+        delete state.pendingRequests[id];
+        reject(new Error('Timeout'));
+      }
+    }, 15000);
+  });
+}
+
+function connectDeriv() {
+  const token = document.getElementById('apiToken').value.trim();
+  if (!token) { showToast('Entre ton token Deriv !', 'error'); return; }
+
+  const btn = document.getElementById('connectBtn');
+  btn.innerHTML = '<span class="spinner"></span>Connexion...';
+  btn.disabled = true;
+
+  clog('Connexion WebSocket Deriv...', 'info');
+
+  // Deriv WebSocket endpoint
+  const ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
+  state.ws = ws;
+
+  ws.onopen = () => {
+    clog('WebSocket ouvert ✅', 'ok');
+    // Authorize with token
+    ws.send(JSON.stringify({ authorize: token, req_id: state.reqId++ }));
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    // Handle pending requests
+    if (data.req_id && state.pendingRequests[data.req_id]) {
+      const { resolve, reject } = state.pendingRequests[data.req_id];
+      delete state.pendingRequests[data.req_id];
+      if (data.error) reject(new Error(data.error.message));
+      else resolve(data);
+      return;
+    }
+
+    // Handle auth response
+    if (data.msg_type === 'authorize') {
+      if (data.error) {
+        clog(`❌ Auth échouée: ${data.error.message}`, 'err');
+        showToast('Token invalide', 'error');
+        btn.innerHTML = 'Se connecter';
+        btn.disabled = false;
+        ws.close();
+        return;
+      }
+      const acc = data.authorize;
+      state.token = token;
+      state.connected = true;
+      state.balance = acc.balance;
+      state.currency = acc.currency;
+      state.accountId = acc.loginid;
+
+      clog(`✅ Connecté ! ${acc.loginid} | Balance: ${acc.balance} ${acc.currency}`, 'ok');
+      showToast('Connecté à Deriv !', 'success');
+      updateUI();
+    }
+
+    // Handle contract updates
+    if (data.msg_type === 'proposal_open_contract') {
+      handleContractUpdate(data.proposal_open_contract);
+    }
+  };
+
+  ws.onerror = (e) => {
+    clog('❌ Erreur WebSocket', 'err');
+    showToast('Erreur connexion', 'error');
+    btn.innerHTML = 'Se connecter';
+    btn.disabled = false;
+  };
+
+  ws.onclose = () => {
+    if (state.connected) {
+      clog('WebSocket fermé', 'warn');
+      state.connected = false;
+    }
+  };
+}
+
+function disconnect() {
+  stopBot();
+  if (state.ws) state.ws.close();
+  state.connected = false;
+  state.token = '';
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('connectSection').classList.remove('hidden');
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = 'Déconnecté';
+  showToast('Déconnecté', 'error');
+}
+
+// ============================================================
+// BOT LOGIC
+// ============================================================
+function startBot() {
+  if (state.botRunning) return;
+  state.botRunning = true;
+  state.tradesCount = 0;
+  state.todayPnl = 0;
+
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+  document.getElementById('statusDot').className = 'status-dot running';
+  document.getElementById('statusText').textContent = 'Bot actif';
+  document.getElementById('rrDisplay').textContent = `1:${document.getElementById('rrRatio').value}`;
+
+  addLog('Bot démarré — SMC/IDM actif sur EUR/USD M15', 'ok');
+
+  runAnalysis();
+  state.botInterval = setInterval(runAnalysis, 60000);
+}
+
+function stopBot() {
+  if (!state.botRunning) return;
+  state.botRunning = false;
+  clearInterval(state.botInterval);
+
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  document.getElementById('statusDot').className = 'status-dot active';
+  document.getElementById('statusText').textContent = 'Connecté';
+
+  addLog('Bot stoppé.', 'warn');
+}
+
+async function runAnalysis() {
+  if (!state.botRunning) return;
+
+  const maxTrades = parseInt(document.getElementById('maxTrades').value);
+  if (state.tradesCount >= maxTrades) {
+    addLog(`Limite session atteinte (${maxTrades} trades)`, 'warn');
+    stopBot();
+    return;
+  }
+
+  addLog('Analyse M15 en cours...', 'info');
+
+  try {
+    // Fetch candles from Deriv
+    const res = await wsRequest({
+      ticks_history: 'frxEURUSD',
+      adjust_start_time: 1,
+      count: 50,
+      end: 'latest',
+      granularity: 900, // 15 minutes
+      style: 'candles'
+    });
+
+    const candles = res.candles;
+    if (!candles || candles.length < 20) {
+      addLog('Données insuffisantes', 'warn');
+      return;
+    }
+
+    state.candles = candles;
+    const signal = detectSMCSignal(candles);
+
+    if (signal) {
+      addLog(`Signal ${signal.type} détecté ! IDM: ${signal.idmLevel} | OB: ${signal.obLevel}`, 'ok');
+      addSignalCard(signal);
+      await executeTrade(signal);
+    } else {
+      addLog('Aucun setup SMC/IDM valide', 'info');
+      document.getElementById('waitingTime').textContent = new Date().toLocaleTimeString('fr-FR');
+    }
+
+  } catch (err) {
+    addLog(`Erreur analyse: ${err.message}`, 'err');
+  }
+}
+
+// ============================================================
+// SMC/IDM DETECTION
+// ============================================================
+function detectSMCSignal(candles) {
+  const len = candles.length;
+  if (len < 15) return null;
+
+  const recent = candles.slice(-15);
+  const highs = recent.map(c => c.high);
+  const lows = recent.map(c => c.low);
+  const closes = recent.map(c => c.close);
+  const opens = recent.map(c => c.open);
+
+  const lastClose = closes[closes.length - 1];
+  const lastHigh = highs[highs.length - 1];
+  const lastLow = lows[lows.length - 1];
+
+  const swingHigh = Math.max(...highs.slice(-8, -2));
+  const swingLow = Math.min(...lows.slice(-8, -2));
+
+  const idmSell = lastHigh > swingHigh && lastClose < swingHigh;
+  const idmBuy = lastLow < swingLow && lastClose > swingLow;
+
+  const prevClose = closes[closes.length - 3];
+  const chochBear = idmSell && lastClose < prevClose * 0.9995;
+  const chochBull = idmBuy && lastClose > prevClose * 1.0005;
+
+  let signal = null;
+  const rrRatio = parseFloat(document.getElementById('rrRatio').value);
+
+  if (chochBear) {
+    let obIdx = recent.length - 4;
+    while (obIdx > 0 && closes[obIdx] < opens[obIdx]) obIdx--;
+    const obLevel = opens[obIdx] || swingHigh;
+    const sl = swingHigh + 0.0010;
+    const tp = lastClose - (sl - lastClose) * rrRatio;
+    signal = {
+      type: 'SELL', entry: lastClose,
+      sl: parseFloat(sl.toFixed(5)), tp: parseFloat(tp.toFixed(5)),
+      idmLevel: parseFloat(swingHigh.toFixed(5)),
+      obLevel: parseFloat(obLevel.toFixed(5)),
+      time: new Date().toLocaleTimeString('fr-FR')
+    };
+  }
+
+  if (chochBull) {
+    let obIdx = recent.length - 4;
+    while (obIdx > 0 && closes[obIdx] > opens[obIdx]) obIdx--;
+    const obLevel = opens[obIdx] || swingLow;
+    const sl = swingLow - 0.0010;
+    const tp = lastClose + (lastClose - sl) * rrRatio;
+    signal = {
+      type: 'BUY', entry: lastClose,
+      sl: parseFloat(sl.toFixed(5)), tp: parseFloat(tp.toFixed(5)),
+      idmLevel: parseFloat(swingLow.toFixed(5)),
+      obLevel: parseFloat(obLevel.toFixed(5)),
+      time: new Date().toLocaleTimeString('fr-FR')
+    };
+  }
+
+  return signal;
+}
+
+// ============================================================
+// EXECUTE TRADE (Deriv Digital Options)
+// ============================================================
+async function executeTrade(signal) {
+  addLog(`Préparation ordre ${signal.type}...`, 'info');
+
+  const stake = parseFloat(document.getElementById('stakeAmount').value);
+  const rrRatio = parseFloat(document.getElementById('rrRatio').value);
+  // Duration: 15 min candles * RR ratio
+  const duration = Math.round(15 * rrRatio);
+  const contractType = signal.type === 'BUY' ? 'CALL' : 'PUT';
+
+  try {
+    // Get proposal first
+    const proposal = await wsRequest({
+      proposal: 1,
+      amount: stake,
+      basis: 'stake',
+      contract_type: contractType,
+      currency: state.currency,
+      duration: duration,
+      duration_unit: 'm',
+      symbol: 'frxEURUSD'
+    });
+
+    if (proposal.error) throw new Error(proposal.error.message);
+
+    const proposalId = proposal.proposal.id;
+    addLog(`Proposal OK | Payout: ${proposal.proposal.payout} ${state.currency}`, 'info');
+
+    // Buy the contract
+    const buy = await wsRequest({
+      buy: proposalId,
+      price: stake
+    });
+
+    if (buy.error) throw new Error(buy.error.message);
+
+    state.tradesCount++;
+    state.contractId = buy.buy.contract_id;
+
+    addLog(`✅ Ordre exécuté ! Contrat: ${state.contractId} | Mise: ${stake} ${state.currency}`, 'ok');
+    showToast(`${signal.type} exécuté !`, 'success');
+    updateAccountTiles();
+
+    // Subscribe to contract updates
+    wsRequest({ proposal_open_contract: 1, contract_id: state.contractId, subscribe: 1 })
+      .catch(() => {});
+
+  } catch (err) {
+    addLog(`❌ Ordre échoué: ${err.message}`, 'err');
+    showToast('Ordre échoué', 'error');
+  }
+}
+
+function handleContractUpdate(contract) {
+  if (!contract) return;
+  if (contract.status === 'sold' || contract.status === 'won' || contract.status === 'lost') {
+    const profit = parseFloat(contract.profit || 0);
+    state.todayPnl += profit;
+    if (profit > 0) {
+      state.wins++;
+      addLog(`✅ Trade gagné ! +${profit.toFixed(2)} ${state.currency}`, 'ok');
+    } else {
+      state.losses++;
+      addLog(`❌ Trade perdu. ${profit.toFixed(2)} ${state.currency}`, 'err');
+    }
+    updateAccountTiles();
+    refreshBalance();
+  }
+}
+
+async function refreshBalance() {
+  try {
+    const res = await wsRequest({ balance: 1 });
+    if (res.balance) {
+      state.balance = res.balance.balance;
+      updateAccountTiles();
+    }
+  } catch (_) {}
+}
+
+// ============================================================
+// UI
+// ============================================================
+function updateUI() {
+  document.getElementById('connectSection').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('statusDot').className = 'status-dot active';
+  document.getElementById('statusText').textContent = 'Connecté';
+  document.getElementById('connectBtn').innerHTML = 'Se connecter';
+  document.getElementById('connectBtn').disabled = false;
+  updateAccountTiles();
+}
+
+function updateAccountTiles() {
+  document.getElementById('balance').textContent = `${state.balance.toFixed(2)} ${state.currency}`;
+  document.getElementById('currency').textContent = state.currency;
+  document.getElementById('openPos').textContent = state.tradesCount;
+
+  const pnlEl = document.getElementById('pnl');
+  pnlEl.textContent = `${state.todayPnl >= 0 ? '+' : ''}${state.todayPnl.toFixed(2)} ${state.currency}`;
+  pnlEl.className = `value ${state.todayPnl >= 0 ? 'green' : 'red'}`;
+
+  const total = state.wins + state.losses;
+  document.getElementById('statWins').textContent = state.wins;
+  document.getElementById('statLoss').textContent = state.losses;
+  document.getElementById('statWR').textContent = total > 0 ? `${Math.round(state.wins / total * 100)}%` : '0%';
+}
+
+function addSignalCard(signal) {
+  const list = document.getElementById('signalsList');
+  const cls = signal.type === 'BUY' ? 'buy' : 'sell';
+  list.insertAdjacentHTML('afterbegin', `
+    <div class="signal-card ${cls}">
+      <div class="signal-header">
+        <span class="signal-type ${cls}">${signal.type}</span>
+        <span class="signal-time">${signal.time}</span>
+      </div>
+      <div class="signal-details">
+        <div class="signal-detail"><div class="dl">ENTRÉE</div><div class="dv">${signal.entry}</div></div>
+        <div class="signal-detail"><div class="dl">SL</div><div class="dv" style="color:var(--red)">${signal.sl}</div></div>
+        <div class="signal-detail"><div class="dl">TP</div><div class="dv" style="color:var(--green)">${signal.tp}</div></div>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted);font-family:var(--mono);">
+        IDM: ${signal.idmLevel} | OB: ${signal.obLevel}
+      </div>
+    </div>
+  `);
+  while (list.children.length > 5) list.removeChild(list.lastChild);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['bot','signals','log'][i] === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function addLog(msg, type = '') {
+  const box = document.getElementById('logBox');
+  if (!box) return;
+  const time = new Date().toLocaleTimeString('fr-FR');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="lt">${time}</span><span class="lm ${type}">${msg}</span>`;
+  box.insertBefore(line, box.firstChild);
+  while (box.children.length > 50) box.removeChild(box.lastChild);
+}
+
+function clog(msg, type = '') {
+  const box = document.getElementById('connectLog');
+  if (!box) { addLog(msg, type); return; }
+  const time = new Date().toLocaleTimeString('fr-FR');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="lt">${time}</span><span class="lm ${type}">${msg}</span>`;
+  box.insertBefore(line, box.firstChild);
+}
+
+function clearLog() {
+  document.getElementById('logBox').innerHTML = '<div class="log-line"><span class="lt">--:--:--</span><span class="lm info">Log effacé.</span></div>';
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.getElementById('rrRatio')?.addEventListener('input', function() {
+  document.getElementById('rrDisplay').textContent = `1:${this.value}`;
+});
+</script>
+</body>
+</html>
